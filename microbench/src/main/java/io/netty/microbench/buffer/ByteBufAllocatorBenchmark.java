@@ -28,6 +28,7 @@ import org.openjdk.jmh.annotations.State;
 import java.util.Random;
 
 /**
+ * 这类基准测试不同配置大小的分配器。
  * This class benchmarks different allocators with different allocation sizes.
  */
 @State(Scope.Benchmark)

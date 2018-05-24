@@ -67,7 +67,7 @@ import static java.lang.Math.min;
 public final class PlatformDependent {
 
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(PlatformDependent.class);
-
+    //最大直接内存
     private static final Pattern MAX_DIRECT_MEMORY_SIZE_ARG_PATTERN = Pattern.compile(
             "\\s*-XX:MaxDirectMemorySize\\s*=\\s*([0-9]+)\\s*([kKmMgG]?)\\s*$");
 
@@ -79,6 +79,8 @@ public final class PlatformDependent {
     private static final boolean CAN_ENABLE_TCP_NODELAY_BY_DEFAULT = !isAndroid();
 
     private static final Throwable UNSAFE_UNAVAILABILITY_CAUSE = unsafeUnavailabilityCause0();
+
+
     private static final boolean DIRECT_BUFFER_PREFERRED =
             UNSAFE_UNAVAILABILITY_CAUSE == null && !SystemPropertyUtil.getBoolean("io.netty.noPreferDirect", false);
     private static final long MAX_DIRECT_MEMORY = maxDirectMemory0();
@@ -90,7 +92,7 @@ public final class PlatformDependent {
     private static final long BYTE_ARRAY_BASE_OFFSET = byteArrayBaseOffset0();
 
     private static final File TMPDIR = tmpdir0();
-
+    //操作系统 32位还是64位的
     private static final int BIT_MODE = bitMode0();
     private static final String NORMALIZED_ARCH = normalizeArch(SystemPropertyUtil.get("os.arch", ""));
     private static final String NORMALIZED_OS = normalizeOs(SystemPropertyUtil.get("os.name", ""));
