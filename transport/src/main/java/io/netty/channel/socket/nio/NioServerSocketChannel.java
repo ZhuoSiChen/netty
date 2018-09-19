@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * TCP 报文
  * A {@link io.netty.channel.socket.ServerSocketChannel} implementation which uses
  * NIO selector based implementation to accept new connections.
  */

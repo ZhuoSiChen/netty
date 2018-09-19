@@ -32,6 +32,8 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
     @SuppressWarnings("unchecked")
     @Override
     public EventExecutorChooser newChooser(EventExecutor[] executors) {
+
+        //判断是否是2的指数2的0次方
         if (isPowerOfTwo(executors.length)) {
             return new PowerOfTwoEventExecutorChooser(executors);
         } else {
@@ -43,6 +45,9 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
         return (val & -val) == val;
     }
 
+    public static void main(String[] args) {
+
+    }
     private static final class PowerOfTwoEventExecutorChooser implements EventExecutorChooser {
         private final AtomicInteger idx = new AtomicInteger();
         private final EventExecutor[] executors;
@@ -52,6 +57,7 @@ public final class DefaultEventExecutorChooserFactory implements EventExecutorCh
         }
 
         @Override
+        //选择策略为executors(); 如果idx为5 0101 长度为8 1110 的话返回的 next是4
         public EventExecutor next() {
             return executors[idx.getAndIncrement() & executors.length - 1];
         }

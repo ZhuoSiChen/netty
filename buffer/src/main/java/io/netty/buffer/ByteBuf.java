@@ -58,6 +58,12 @@ import java.nio.charset.UnsupportedCharsetException;
  *
  * <h3>Sequential Access Indexing</h3>
  *
+ * 提供两个指针变量以支持顺序。
+ * 读和写操作-{@link #readerIndex() readerIndex}用于读取。
+ * 操作和{@link #writerIndex()写入操作。
+ * 分别。下图显示了如何将缓冲区分段。
+ * 两个指针的三个区域:
+ *
  * {@link ByteBuf} provides two pointer variables to support sequential
  * read and write operations - {@link #readerIndex() readerIndex} for a read
  * operation and {@link #writerIndex() writerIndex} for a write operation
@@ -2381,12 +2387,16 @@ public abstract class ByteBuf implements ReferenceCounted, Comparable<ByteBuf> {
     /**
      * Returns {@code true} if and only if this buffer has a reference to the low-level memory address that points
      * to the backing data.
+     * 当且仅当，当前buf有一个指向backing(备份)数据的低位内存地址引用时，返回true
      */
     public abstract boolean hasMemoryAddress();
 
     /**
      * Returns the low-level memory address that point to the first byte of ths backing data.
-     *
+     * 返回buf中第一个字节的低位内存地址
+     * 8bit(位)=1Byte(字节)
+     * 0x1122
+     * 返回的是22的地址
      * @throws UnsupportedOperationException
      *         if this buffer does not support accessing the low-level memory address
      */

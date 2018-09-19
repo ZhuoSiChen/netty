@@ -53,6 +53,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * UDP报文
  * An NIO datagram {@link Channel} that sends and receives an
  * {@link AddressedEnvelope AddressedEnvelope<ByteBuf, SocketAddress>}.
  *

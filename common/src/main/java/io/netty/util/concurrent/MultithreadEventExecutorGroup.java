@@ -75,20 +75,23 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         if (executor == null) {
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
-
+        //设置线程池大小
         children = new EventExecutor[nThreads];
 
         for (int i = 0; i < nThreads; i ++) {
             boolean success = false;
             try {
+                //一个个初始化线程
+                //执行的是NioEventLoopGroup的newChild
                 children[i] = newChild(executor, args);
                 success = true;
             } catch (Exception e) {
-                // TODO: Think about if this is a good exception type
+                // TODO: Think about if this is a good exception type ???? 想干什么呢？
                 throw new IllegalStateException("failed to create a child event loop", e);
             } finally {
                 if (!success) {
                     for (int j = 0; j < i; j ++) {
+                        //初始换关闭
                         children[j].shutdownGracefully();
                     }
 
@@ -96,6 +99,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                         EventExecutor e = children[j];
                         try {
                             while (!e.isTerminated()) {
+                                //等待无限长
                                 e.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
                             }
                         } catch (InterruptedException interrupted) {
@@ -107,7 +111,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                 }
             }
         }
-
+        // 从children中选取一个eventLoop的策略。
+        //默认的只有两个 @DefaultEventExecutorChooserFactory
         chooser = chooserFactory.newChooser(children);
 
         final FutureListener<Object> terminationListener = new FutureListener<Object>() {
@@ -118,11 +123,11 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
                 }
             }
         };
-
+        //设置监听线程销毁事件？
         for (EventExecutor e: children) {
             e.terminationFuture().addListener(terminationListener);
         }
-
+        //
         Set<EventExecutor> childrenSet = new LinkedHashSet<EventExecutor>(children.length);
         Collections.addAll(childrenSet, children);
         readonlyChildren = Collections.unmodifiableSet(childrenSet);
@@ -209,8 +214,10 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
     }
 
     @Override
+    //等待终结
     public boolean awaitTermination(long timeout, TimeUnit unit)
             throws InterruptedException {
+        //deadline 已纳秒计算
         long deadline = System.nanoTime() + unit.toNanos(timeout);
         loop: for (EventExecutor l: children) {
             for (;;) {

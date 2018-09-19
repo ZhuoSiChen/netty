@@ -31,6 +31,8 @@ import java.security.PrivilegedAction;
 import static io.netty.util.internal.ObjectUtil.checkNotNull;
 
 /**
+ * 这个类是用来操作sum.misc.*
+ * 需要访问{@code sun.misc.*}的{@link PlatformDependent}操作。
  * The {@link PlatformDependent} operations which requires access to {@code sun.misc.*}.
  */
 final class PlatformDependent0 {
@@ -47,7 +49,17 @@ final class PlatformDependent0 {
     private static final Throwable UNSAFE_UNAVAILABILITY_CAUSE;
     private static final Object INTERNAL_UNSAFE;
     private static final boolean IS_EXPLICIT_TRY_REFLECTION_SET_ACCESSIBLE = explicitTryReflectionSetAccessible0();
-
+    /**
+     * 判断环境是否支持UNSAFE
+     * Unsafe
+     * 1.一、内存管理。包括分配内存、释放内存等。
+     * 二、非常规的对象实例化。
+     * 三、操作类、对象、变量。
+     * 四、数组操作。
+     * 五、多线程同步。包括锁机制、CAS操作等。
+     * 六、挂起与恢复。
+     * 七、内存屏障。
+     */
     static final Unsafe UNSAFE;
 
     // constants borrowed from murmur3
@@ -56,11 +68,13 @@ final class PlatformDependent0 {
     static final int HASH_CODE_C2 = 0x1b873593;
 
     /**
+     *
+     *
      * Limits the number of bytes to copy per {@link Unsafe#copyMemory(long, long, long)} to allow safepoint polling
      * during a large copy.
      */
     private static final long UNSAFE_COPY_THRESHOLD = 1024L * 1024L;
-
+    //变量 未对齐
     private static final boolean UNALIGNED;
 
     static {
@@ -70,22 +84,25 @@ final class PlatformDependent0 {
         Throwable unsafeUnavailabilityCause = null;
         Unsafe unsafe;
         Object internalUnsafe = null;
-
+        //如果unsafe类不能获得。
         if ((unsafeUnavailabilityCause = EXPLICIT_NO_UNSAFE_CAUSE) != null) {
             direct = null;
             addressField = null;
             unsafe = null;
             internalUnsafe = null;
         } else {
+            //分配一个新的直接字节缓冲。
             direct = ByteBuffer.allocateDirect(1);
 
             // attempt to access field Unsafe#theUnsafe
+            //获得unsafe对象
             final Object maybeUnsafe = AccessController.doPrivileged(new PrivilegedAction<Object>() {
                 @Override
                 public Object run() {
                     try {
                         final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
                         // We always want to try using Unsafe as the access still works on java9 as well and
+                        //我们需要它来进行本机传输和许多优化。
                         // we need it for out native-transports and many optimizations.
                         Throwable cause = ReflectionUtil.trySetAccessible(unsafeField, false);
                         if (cause != null) {
@@ -161,9 +178,9 @@ final class PlatformDependent0 {
                             final Field field = Buffer.class.getDeclaredField("address");
                             // Use Unsafe to read value of the address field. This way it will not fail on JDK9+ which
                             // will forbid changing the access level via reflection.
+                            //获取ByteBuffer的地址偏移量
                             final long offset = finalUnsafe.objectFieldOffset(field);
                             final long address = finalUnsafe.getLong(direct, offset);
-
                             // if direct really is a direct buffer, address will be non-zero
                             if (address == 0) {
                                 return null;
@@ -192,7 +209,7 @@ final class PlatformDependent0 {
 
             if (unsafe != null) {
                 // There are assumptions made where ever BYTE_ARRAY_BASE_OFFSET is used (equals, hashCodeAscii, and
-                // primitive accessors) that arrayIndexScale == 1, and results are undefined if this is not the case.
+                // primitive 原始 accessors 存取器) that arrayIndexScale == 1, and results are undefined if this is not the case.
                 long byteArrayIndexScale = unsafe.arrayIndexScale(byte[].class);
                 if (byteArrayIndexScale != 1) {
                     logger.debug("unsafe.arrayIndexScale is {} (expected: 1). Not using unsafe.", byteArrayIndexScale);

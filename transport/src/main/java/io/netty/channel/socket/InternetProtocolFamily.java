@@ -25,6 +25,7 @@ import java.net.InetAddress;
  * Internet Protocol (IP) families used byte the {@link DatagramChannel}
  */
 public enum InternetProtocolFamily {
+
     IPv4(Inet4Address.class, 1, NetUtil.LOCALHOST4),
     IPv6(Inet6Address.class, 2, NetUtil.LOCALHOST6);
 
