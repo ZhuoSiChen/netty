@@ -1,0 +1,30 @@
+this(nThreads, executor, SelectorProvider.provider());
+  ~
+  super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, executor, args);
+     ~
+     this(nThreads, executor, DefaultEventExecutorChooserFactory.INSTANCE, args);
+         protected MultithreadEventExecutorGroup(int nThreads, Executor executor,EventExecutorChooserFactory chooserFactory, Object... args)
+            executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());//创建线程执行器,每次创建一个任务后执行
+                newDefaultThreadFactory();
+                    new DefaultThreadFactory(getClass());//这里实际上是NioEventThreadGroup
+                    this(toPoolName(poolType), daemon, priority);//这里实际上获得NioEventThreadGroup
+                    DefaultThreadFactory(String poolName, boolean daemon, int priority, ThreadGroup threadGroup);
+                    //此类的重要方法为Thread newThread(Runnable r)
+                    //new FastThreadLocalThread(threadGroup, r, name);这个FastThreadLocalThread包装了个threadLocalMap？这个threadLocalMap干什么用的呢?
+            children = new EventExecutor[nThreads];//保存线程执行器
+            children[i] = newChild(executor, args);
+                ~
+                NioEventLoop(NioEventLoopGroup parent, Executor executor, SelectorProvider selectorProvider,
+                                                 SelectStrategy strategy, RejectedExecutionHandler rejectedExecutionHandler)
+                                     super(parent, executor, false, DEFAULT_MAX_PENDING_TASKS, rejectedExecutionHandler);
+                                        ~
+                                        this.executor = ObjectUtil.checkNotNull(executor, "executor");
+                                        taskQueue = newTaskQueue(this.maxPendingTasks);
+                                            PlatformDependent.<Runnable>newMpscQueue();
+                                            //SPSC队列是指单一生产者/单一消费者队列。MPSC队列是指多生产者/单一消费者队列。
+                                     SelectorTuple selectorTuple = openSelector();
+                                        unwrappedSelector = provider.openSelector();//创建一个selector
+            chooser = chooserFactory.newChooser(children);
+            //为了给新连接绑定对应的NioEventLoop对应的方法是MultithreadEventExecutorGroup.next()方法
+                new PowerOfTwoEventExecutorChooser(executors);
+
