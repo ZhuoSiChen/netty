@@ -276,6 +276,7 @@
     <module>testsuite-shading</module>
     <module>microbench</module>
     <module>bom</module>
+	  <module>nio-example</module>
   </modules>
 
   <dependencyManagement>

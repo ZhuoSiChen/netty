@@ -1,3 +1,56 @@
+//服务端的socket在哪里初始化在哪里调用jdk底层的socketAPI去创建
+$1
+//在哪里accept socket的连接
+
+
+//1.创建服务端channel channel是对jdk底层的SocketChannel();的抽象
+//2.初始化服务端channel
+    2.1初始化基本属性,
+    2.2添加逻辑处理器
+//3.注册selector
+b.bind(PORT);
+    ~
+    doBind(final SocketAddress localAddress)
+        ChannelFuture regFuture = initAndRegister();
+            channel = channelFactory.newChannel();//在创建Bootstrap里传进的NioServerSocketChannel 细看ServerBootstrap.channel()方法
+                clazz.getConstructor().newInstance();//在此反射创建服务端的channel
+                    NioServerSocketChannel()
+                        this(newSocket(DEFAULT_SELECTOR_PROVIDER));
+                            provider.openServerSocketChannel(); //$1 创建jdk底层的SocketChannel();
+                        NioServerSocketChannel(ServerSocketChannel channel)
+                            super(null, channel, SelectionKey.OP_ACCEPT);//super:AbstractNioChannel在channel上注册OP_ACCEPT事件
+                                super(parent);//AbstractChannel是对channel的抽象 无论是客户端还是服务端
+                                    this.parent = parent;//设置parent
+                                    id = newId();//设置Id
+                                    unsafe = newUnsafe();//tcp底层的读写操作有关
+                                    pipeline = newChannelPipeline();//客户端与服务端的逻辑链
+                                this.ch = ch;//保存channel
+                                his.readInterestOp = readInterestOp;
+                                ch.configureBlocking(false);//设置非阻塞的调用
+                            //配置TCP参数 javaChannel()返回的是SelectableChannel 也就是ServerSocketChannel的父类
+                            config = new NioServerSocketChannelConfig(this, javaChannel().socket());
+            init(channel);
+                setChannelOptions(channel, options, logger);//保存用户自定义的属性与配置
+            ChannelPipeline p = channel.pipeline();
+            p.addLast();
+                //下面方法非常重要
+                new ServerBootstrapAcceptor(ch, currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs)
+
+            // config().group() = SingleThreadEventLoop对象
+            // 把channel注册进EventLoop
+            ChannelFuture regFuture = config().group().register(channel);
+                ~
+                promise.channel().unsafe().register(this, promise);//promise:DefaultChannelPromise
+                //会调用AbstractChannel下的
+                    register(EventLoop eventLoop, final ChannelPromise promise)
+                         AbstractChannel.this.eventLoop = eventLoop;
+                         register0(promise);
+                            doRegister();//javaChannel() = NioSocketChannel
+                                selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this);
+                            pipeline.invokeHandlerAddedIfNeeded();
+                            pipeline.fireChannelRegistered();
+
+//创建NioEventLoopGroup
 this(nThreads, executor, SelectorProvider.provider());
   ~
   super(nThreads == 0 ? DEFAULT_EVENT_LOOP_THREADS : nThreads, executor, args);
@@ -27,4 +80,7 @@ this(nThreads, executor, SelectorProvider.provider());
             chooser = chooserFactory.newChooser(children);
             //为了给新连接绑定对应的NioEventLoop对应的方法是MultithreadEventExecutorGroup.next()方法
                 new PowerOfTwoEventExecutorChooser(executors);
+b.bind(PORT);
+    ~
+    doBind(final SocketAddress localAddress)
 
