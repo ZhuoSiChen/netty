@@ -52,7 +52,7 @@ final class PlatformDependent0 {
     /**
      * 判断环境是否支持UNSAFE
      * Unsafe
-     * 1.一、内存管理。包括分配内存、释放内存等。
+     * 一、内存管理。包括分配内存、释放内存等。
      * 二、非常规的对象实例化。
      * 三、操作类、对象、变量。
      * 四、数组操作。
@@ -84,7 +84,7 @@ final class PlatformDependent0 {
         Throwable unsafeUnavailabilityCause = null;
         Unsafe unsafe;
         Object internalUnsafe = null;
-        //如果unsafe类不能获得。
+        //如果 unsafe 类不能获得。
         if ((unsafeUnavailabilityCause = EXPLICIT_NO_UNSAFE_CAUSE) != null) {
             direct = null;
             addressField = null;

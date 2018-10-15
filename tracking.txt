@@ -17,21 +17,41 @@ b.bind(PORT);
                 clazz.getConstructor().newInstance();//在此反射创建服务端的channel
                     NioServerSocketChannel()
                         this(newSocket(DEFAULT_SELECTOR_PROVIDER));
+                        newSocket(DEFAULT_SELECTOR_PROVIDER)
                             provider.openServerSocketChannel(); //$1 创建jdk底层的SocketChannel();
-                        NioServerSocketChannel(ServerSocketChannel channel)
-                            super(null, channel, SelectionKey.OP_ACCEPT);//super:AbstractNioChannel在channel上注册OP_ACCEPT事件
-                                super(parent);//AbstractChannel是对channel的抽象 无论是客户端还是服务端
-                                    this.parent = parent;//设置parent
-                                    id = newId();//设置Id
-                                    unsafe = newUnsafe();//tcp底层的读写操作有关
-                                    pipeline = newChannelPipeline();//客户端与服务端的逻辑链
-                                this.ch = ch;//保存channel
-                                his.readInterestOp = readInterestOp;
-                                ch.configureBlocking(false);//设置非阻塞的调用
-                            //配置TCP参数 javaChannel()返回的是SelectableChannel 也就是ServerSocketChannel的父类
-                            config = new NioServerSocketChannelConfig(this, javaChannel().socket());
+                        this(newSocket(DEFAULT_SELECTOR_PROVIDER));
+                            NioServerSocketChannel(ServerSocketChannel channel)
+                                super(null, channel, SelectionKey.OP_ACCEPT);//super:AbstractNioMessageChannel 在channel上注册OP_ACCEPT事件
+                                    super(parent, ch, readInterestOp);//super:AbstractNioChannel 是对 channel 的抽象 无论是客户端还是服务端
+                                        super(parent);//AbstractChannel
+                                            this.parent = parent;//设置parent
+                                            id = newId();//设置Id
+                                            unsafe = newUnsafe();//调用的是 AbstractNioMessageChannel.newUnsafe() tcp底层的读写操作有关
+                                                new NioMessageUnsafe();//调用 NioMessageUnsafe
+                                            pipeline = newChannelPipeline();//客户端与服务端的逻辑链
+                                    this.ch = ch;//保存channel
+                                    his.readInterestOp = readInterestOp; //保存 SelectionKey
+                                    ch.configureBlocking(false);//设置非阻塞的调用
+                                //配置TCP参数 javaChannel()返回的是SelectableChannel 也就是ServerSocketChannel的父类
+                                config = new NioServerSocketChannelConfig(this, javaChannel().socket());
             init(channel);//初始化 channel
                 setChannelOptions(channel, options, logger);//保存用户自定义的属性与配置
+            ChannelFuture regFuture = config().group().register(channel);
+                config().group()//config().group(): bossGroup
+                register(channel);
+                    next().register(channel);
+                    next();
+                        chooser.next();//因为 bossGroup 线程数为 1 是 2的指数所以采用的是 PowerOfTwoEventExecutorChooser
+                            executors[idx.getAndIncrement() & executors.length - 1];
+                    register(channel);//调用的是 SingleThreadEventLoop 里的register
+                        register(new DefaultChannelPromise(channel, this));
+                        new DefaultChannelPromise(channel, this)
+                            super(executor);
+                                this.executor = checkNotNull(executor, "executor");//DefaultPromise
+                            this.channel = checkNotNull(channel, "channel");
+                        register(new DefaultChannelPromise(channel, this))
+                            ObjectUtil.checkNotNull(promise, "promise");
+                            promise.channel().unsafe().register(this, promise);
             ChannelPipeline p = channel.pipeline();
             p.addLast();
             //把一个任务扔进eventLoop()
@@ -42,7 +62,6 @@ b.bind(PORT);
                             ch, currentChildGroup, currentChildHandler, currentChildOptions, currentChildAttrs));
                 }
             });
-
 
             //config().group() = SingleThreadEventLoop对象
             //把channel注册进EventLoop上
@@ -118,13 +137,15 @@ this(nThreads, executor, SelectorProvider.provider());
             //如果不是的话
             chooser = chooserFactory.newChooser(children);
                 new PowerOfTwoEventExecutorChooser(executors);
-            每次执行任务都会创建一个线程实体
+            //每次执行任务都会创建一个线程实体
 
 
 启动NioEventLoop触发器
+
     1.服务端启动绑定端口
 
     2.新连接接入通过chooser绑定一个NioEventLoop
+
     1.1 bind方法封装成task进入到NioEventLoop的execute方法。
     1.2 netty判断是否是Nio线程调用startThread方法开始尝试创建线程
     1.3 通过线程执行器创建作用：每次执行一个任务的时候都会创建一个线程,也就是底层的FastThreadLocalThread
@@ -192,10 +213,10 @@ Netty是在哪里检测有新连接接入的？
 新连接是怎样注册到NioEventLoop线程的？
 
 netty新连接接入处理逻辑
-检测新连接,新连接通过服务端绑定的selector轮询出Accept事件后
-基于JDKNioSocketChannel创建netty的NioSocketChannel也就是客户端Channel
-接着,netty给客户端分配一个NioEventLoop,并把该channel注册到该EventLoop对应的selector上,后续的读写都用该selector进行管理.
-向该selector注册读事件.注册过程与服务端注册Accept事件复用同一段逻辑.
+检测新连接,新连接通过服务端绑定的 selector 轮询出 Accept 事件后
+基于 JDK NioSocketChannel 创建netty的 NioSocketChannel 也就是客户端 Channel
+接着,netty给客户端分配一个 NioEventLoop ,并把该 channel 注册到该 EventLoop 对应的 selector 上,后续的读写都用该 selector 进行管理.
+向该 selector 注册读事件.注册过程与服务端注册Accept事件复用同一段逻辑.
 
 EventLoop 新连接接入
     private void processSelectedKey(SelectionKey k, AbstractNioChannel ch)//入口
@@ -229,11 +250,11 @@ buf.add(new NioSocketChannel(this, ch));
     config = new NioSocketChannelConfig(this, socket.socket());
         DefaultSocketChannelConfig
             setTcpNoDelay(true);
-Netty中Channel的分类
+Netty中 Channel 的分类
     NioServerSocketChannel
     NioSocketChannel
     Unsafe
-新连接NioEventLoop的分配和selector注册
+新连接 NioEventLoop 的分配和 selector 注册
 
 服务端Channel的pipeline构成Head->ServerBootstrapAcceptor->tail //ServerBootstrapAcceptor 是在上面initAndRegister()方法注册上去的
 
@@ -258,3 +279,117 @@ unsafe.read()//NioMessageUnsafe
                                         if (eventLoop.inEventLoop()) 返回false
                                         else eventLoop.execute(new Runnable() {public void run() {register0(promise);}});
 
+pipeline概述
+
+
+向 pipeline 添加ChannelHandler pipeline.addLast()处理流程
+1.判断是否重复添加
+2.创建节点并添加至链表 把每个节点包装成channelHandlerContext 节点是channelHandlerContext
+3.回调添加完成事件
+    addLast(ChannelHandler... handlers)
+        addLast(null, handlers);
+            addLast(executor, null, h);//for循环添加handler executor为NULL
+                checkMultiplicity(handler);//1.判断是否重复添加
+                    ChannelHandlerAdapter h = (ChannelHandlerAdapter) handler;
+                    if (!h.isSharable() && h.added){//判断handler是否被@Sharable注解
+                    throw new ChannelPipelineException(h.getClass().getName() +" is not a @Sharable handler, so can't be added or removed multiple times.");
+                    }
+                    h.added = true;
+                newCtx = newContext(group, filterName(name, handler), handler);//2.创建节点并添加至链表 filterName
+                    filterName(name, handler)
+                        return generateName(handler);
+                            Map<Class<?>, String> cache = nameCaches.get();
+                            name = generateName0(handlerType);
+                                StringUtil.simpleClassName(handlerType) + "#0";
+                            cache.put(handlerType, name);//缓存 handlerType 的
+                        checkDuplicateName(name);
+                            context0(name);
+                                AbstractChannelHandlerContext context = head.next;
+                                if (context.name().equals(name)){//这里从head遍历到tail pipeline上的AbstractChannelHandlerContext 查看 name 是否相等
+                                return context;
+                                }
+                newCtx = newContext(group, filterName(name, handler), handler);// 创建 ChannelHandlerContext
+                    new DefaultChannelHandlerContext(this, childExecutor(group), name, handler);
+                addLast0(newCtx);//2.创建节点并添加至链表
+                     AbstractChannelHandlerContext prev = tail.prev;
+                     newCtx.prev = prev;
+                     newCtx.next = tail;
+                     prev.next = newCtx;
+                     tail.prev = newCtx;
+
+ByteBuf的分类
+分别从
+    safe 与 unsafe 根据jdk底层是否有unsafe对象自动判别 unsafe根据 内存地址加偏移量拿到数据,非unsafe通过数组加下标或者通过jdk底层的的api byteBuffer 去拿数据
+    pooled 与 unpooled
+    Direct与Heap
+    上分类
+
+ByteBuf 的继承关系图
+    AbstractByteBuf
+        PooledHeapByteBuf
+            PooledUnsafeHeapByteBuf
+        PooledDirectByteBuf
+            PooledUnsafeDirectByteBuf
+        UnpooledHeapByteBuf
+            UnpooledUnsafeHeapByteBuf
+
+ByteBufAllocator
+    AbstractByteBufAllocator
+        1.PooledByteBufAllocator //相当于在一个池子里拿内存
+            F:
+                PoolArena<byte[]>[] heapArenas;
+                PoolArena<ByteBuffer>[] directArenas;
+                int tinyCacheSize;
+                int smallCacheSize;
+                int normalCacheSize;
+                List<PoolArenaMetric> heapArenaMetrics;
+                List<PoolArenaMetric> directArenaMetrics;
+                PoolThreadLocalCache threadCache; //类似于ThreadLocal
+                int chunkSize;
+                PooledByteBufAllocatorMetric metric;
+            method:
+                newDirectBuffer(int initialCapacity, int maxCapacity)
+                    PoolThreadCache cache = threadCache.get(); //拿到当前线程缓存
+                    PoolArena<ByteBuffer> directArena = cache.directArena;
+        2.UnpooledByteBufAllocator    //调用系统api直接实现
+            F:
+            UnpooledByteBufAllocatorMetric metric = new UnpooledByteBufAllocatorMetric();
+            boolean disableLeakDetector;
+            boolean noCleaner;
+
+
+UnpooledHeapByteBuf 与 UnpooledUnsafeHeapByteBuf 的区别
+UnpooledHeapByteBuf 的创建的
+    super(maxCapacity);
+    this.alloc = alloc;
+    setArray(allocateArray(initialCapacity));
+        allocateArray(initialCapacity)
+            new byte[initialCapacity];
+        setArray(allocateArray(initialCapacity));
+            array = initialArray;
+            tmpNioBuf = null;
+    setIndex(0, 0);
+        setIndex0(readerIndex, writerIndex);
+            this.readerIndex = readerIndex;
+            this.writerIndex = writerIndex;
+UnpooledUnsafeHeapByteBuf 的创建
+    调用的是UnpooledHeapByteBuf的构造函数
+
+
+UnpooledHeapByteBuf
+    protected byte _getByte(int index) {
+        return HeapByteBufUtil.getByte(array, index);
+    }
+   _getByte(int index)
+        HeapByteBufUtil.getByte(array, index);
+             return memory[index];
+UnpooledUnsafeHeapByteBuf
+    @Override
+    protected byte _getByte(int index) {
+        return UnsafeByteBufUtil.getByte(array, index);
+    }
+    _getByte(int index)
+        UnsafeByteBufUtil.getByte(array, index);
+            PlatformDependent.getByte(address);
+                PlatformDependent0.getByte(address);
+                    return UNSAFE.getByte(address);
